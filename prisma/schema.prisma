@@ -12,6 +12,50 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   
+  accounts      Account[]
+  sessions      Session[]
+  favorites     UserFavorite[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  visits OpeningVisit[]
 }
 
 model Opening {
@@ -28,6 +72,9 @@ model Opening {
   aliases    Alias[]
   fromTransitions FromTo[] @relation("FromOpening")
   toTransitions   FromTo[] @relation("ToOpening")
+  UserFavorite UserFavorite[]
+  visits OpeningVisit[]
+
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -64,4 +111,30 @@ model FromTo {
 
   @@index([fromFen])
   @@index([toFen])
+}
+
+model UserFavorite {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  opening   Opening  @relation(fields: [openingId], references: [id])
+  openingId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, openingId])
+}
+
+model OpeningVisit {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  opening   Opening  @relation(fields: [openingId], references: [id], onDelete: Cascade)
+  openingId String
+  visitedAt DateTime @default(now())
+  count     Int      @default(1) // Para contar visitas repetidas
+
+  @@unique([userId, openingId])
+  @@index([userId])
+  @@index([openingId])
+  @@index([visitedAt])
 }

@@ -132,7 +132,7 @@ async function migrateOpenings() {
           });
           
           fromToProcessed++;
-          if (fromToProcessed % 1000 === 0) {
+          if (fromToProcessed % 100 === 0) {
             console.log(`Procesadas ${fromToProcessed} relaciones FromTo...`);
           }
         } catch (error) {
